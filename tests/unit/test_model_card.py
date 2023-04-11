@@ -39,13 +39,15 @@ from sagemaker.model_card import (
     ModelCard,
     Function,
     TrainingJobDetails,
-    ModelPackage,
-    ModelPackageCreator,
+    ModelPackage
+)
+from sagemaker.model_card.model_card import (
+    ModelCardExportJob, 
+    ModelPackageCreator, 
     SourceAlgorithm,
     Container,
-    InferenceSpecification
+    InferenceSpecification 
 )
-from sagemaker.model_card.model_card import ModelCardExportJob
 from sagemaker.model_card.helpers import (
     _MaxSizeArray,
     _IsList,
@@ -76,7 +78,7 @@ MODEL_IMAGE = "test model container image"
 INFERENCE_ENVRIONMENT = Environment(container_image=[MODEL_IMAGE])
 
 # model package details arguments
-MODEL_PACKAGE_ARN = "arn:aws:sagemaker:us-west-2:123456789:model-package/testmodelgroup/1"
+MODEL_PACKAGE_ARN = "arn:aws:sagemaker:us-west-2:001234567890:model-package/testmodelgroup/1"
 MODEL_PACKAGE_DESCRIPTION = "this is test model package"
 MODEL_PACKAGE_STATUS = "Pending"
 MODEL_APPROVAL_STATUS = "PendingManualApproval"
@@ -296,6 +298,47 @@ DESCRIBE_MODEL_EXAMPLE = {
     },
 }
 
+DESCRIBE_MODEL_PACKAGE_EXAMPLE = {
+    "ModelPackageArn": MODEL_PACKAGE_ARN,
+    "ModelPackageName": MODEL_PACKAGE_NAME,
+    "ModelPackageGroupName": MODEL_PACKAGE_GROUP_NAME,
+    "ModelPackageVersion": MODEL_PACKAGE_VERSION,
+    "ModelPackageDescription": MODEL_PACKAGE_DESCRIPTION,
+    "CreationTime": datetime.datetime(2022, 9, 20, 13, 4, 9, 134000),
+    "InferenceSpecification": {
+        "Containers": [
+            {
+                "Image": MODEL_IMAGE,
+                "ImageDigest": "sha256:4814427c3e0a6cf99e637704da3ada04219ac7cd5727ff62284153761d36d7d3",
+                "ModelDataUrl": MODEL_DATA_URL,
+                "NearestModelName": NEAREST_MODEL_NAME
+            }
+        ],
+        "SupportedContentTypes": [],
+        "SupportedResponseMIMETypes": []
+    },
+    "ModelPackageStatus": MODEL_PACKAGE_STATUS,
+    "ModelApprovalStatus": MODEL_APPROVAL_STATUS,
+    "CreatedBy": {
+        "UserProfileArn": "arn:aws:sagemaker:us-west-2:001234567890:user-profile/d-crvaptvnkhbq/test",
+        "UserProfileName": USER_PROFILE_NAME,
+        "DomainId": "d-crvaptvnkhbq"
+    },
+    "Domain": DOMAIN,
+    "Task": TASK,
+    "ResponseMetadata": {
+        "RequestId": "43ff67e3-2ae5-479e-bed0-9caccc9e62f0",
+        "HTTPStatusCode": 200,
+        "HTTPHeaders": {
+            "x-amzn-requestid": "43ff67e3-2ae5-479e-bed0-9caccc9e62f0",
+            "content-type": "application/x-amz-json-1.1",
+            "content-length": "590",
+            "date": "Tue, 20 Sep 2022 19:55:36 GMT",
+        },
+        "RetryAttempts": 0,
+    },
+}
+
 SEARCH_MODEL_CARD_WITH_MODEL_ID_EXAMPLE = {
     "Results": [
         {
@@ -354,6 +397,14 @@ MISSING_MODEL_CLIENT_ERROR = ClientError(
         "ResponseMetadata": {"MaxAttemptsReached": True, "RetryAttempts": 4},
     },
     operation_name="DescribeModel",
+)
+
+MISSING_MODEL_PACKAGE_CLIENT_ERROR = ClientError(
+    error_response={
+        "Error": {"Code": "BadRequest", "Message": f"Could not find model package {MODEL_PACKAGE_ARN}"},
+        "ResponseMetadata": {"MaxAttemptsReached": True, "RetryAttempts": 4},
+    },
+    operation_name="DescribeModelPackage",
 )
 
 TRAINING_JOB_NAME = MODEL_NAME
@@ -747,6 +798,32 @@ def test_create_model_card(
 
 
 @patch("sagemaker.Session")
+def test_create_model_card_with_model_package(
+    session,
+    model_package_example,
+    intended_uses_example,
+    business_details_example,
+    additional_information_example,
+):
+    session.sagemaker_client.create_model_card = Mock(return_value=CREATE_MODEL_CARD_RETURN_EXAMPLE)
+    session.sagemaker_client.describe_model_card = Mock(return_value=LOAD_MODEL_CARD_EXMPLE)
+
+    card = ModelCard(
+        name=MODEL_CARD_NAME,
+        status=MODEL_CARD_STATUS,
+        model_package=model_package_example,
+        intended_uses=intended_uses_example,
+        business_details=business_details_example,
+        additional_information=additional_information_example,
+        sagemaker_session=session,
+    )
+
+    card.create()
+
+    assert card.arn == MODEL_CARD_ARN
+
+
+@patch("sagemaker.Session")
 def test_create_model_card_duplicate(session):
     session.sagemaker_client.create_model_card.side_effect = [
         CREATE_MODEL_CARD_RETURN_EXAMPLE,
@@ -1073,6 +1150,40 @@ def test_model_details_autodiscovery(session):
         ),
     ):
         ModelOverview.from_model_name(MODEL_NAME, sagemaker_session=session)
+
+
+@patch("sagemaker.Session")
+def test_model_package_autodiscovery(session):
+    session.sagemaker_client.describe_model_package.side_effect = [
+        DESCRIBE_MODEL_PACKAGE_EXAMPLE,
+        DESCRIBE_MODEL_PACKAGE_EXAMPLE,
+        MISSING_MODEL_PACKAGE_CLIENT_ERROR,
+    ]
+
+    session.sagemaker_client.search.side_effect = [
+        SEARCH_MODEL_CARD_WITH_MODEL_ID_EMPTY_EXAMPLE,
+        SEARCH_MODEL_CARD_WITH_MODEL_ID_EXAMPLE,
+    ]
+
+    model_package = ModelPackage.from_model_package_name(MODEL_PACKAGE_ARN, sagemaker_session=session)
+    assert model_package.model_package_arn == MODEL_PACKAGE_ARN
+    assert model_package.model_package_group_name == MODEL_PACKAGE_GROUP_NAME
+    assert model_package.inference_specification.containers[0].model_data_url == MODEL_DATA_URL
+    assert model_package.created_by.user_profile_name == USER_PROFILE_NAME
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(f"The model package has already been associated with {[MODEL_CARD_NAME]} model cards."),
+    ):
+        ModelPackage.from_model_package_name(MODEL_PACKAGE_ARN, sagemaker_session=session)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            f"Model package details for {MODEL_PACKAGE_ARN} could not be found. Make sure the model package name or ARN is valid."  # noqa E501  # pylint: disable=c0301
+        ),
+    ):
+        ModelPackage.from_model_package_name(MODEL_PACKAGE_ARN, sagemaker_session=session)
 
 
 @patch("sagemaker.Session")
