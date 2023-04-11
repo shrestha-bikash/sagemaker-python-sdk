@@ -39,6 +39,11 @@ from sagemaker.model_card import (
     ModelCard,
     Function,
     TrainingJobDetails,
+    ModelPackage,
+    ModelPackageCreator,
+    SourceAlgorithm,
+    Container,
+    InferenceSpecification
 )
 from sagemaker.model_card.model_card import ModelCardExportJob
 from sagemaker.model_card.helpers import (
@@ -69,6 +74,26 @@ MODEL_OWNER = "null owner"
 MODEL_ARTIFACT = ["s3://1", "s3://2"]
 MODEL_IMAGE = "test model container image"
 INFERENCE_ENVRIONMENT = Environment(container_image=[MODEL_IMAGE])
+
+# model package details arguments
+MODEL_PACKAGE_ARN = "arn:aws:sagemaker:us-west-2:123456789:model-package/testmodelgroup/1"
+MODEL_PACKAGE_DESCRIPTION = "this is test model package"
+MODEL_PACKAGE_STATUS = "Pending"
+MODEL_APPROVAL_STATUS = "PendingManualApproval"
+APPROVAL_DESCRIPTION = "approval_description"
+MODEL_PACKAGE_GROUP_NAME = "testmodelgroup"
+MODEL_PACKAGE_NAME = "model_package_name"
+MODEL_PACKAGE_VERSION = 1
+DOMAIN = "domain"
+TASK = "task"
+USER_PROFILE_NAME = "test-user"
+CREATED_BY = ModelPackageCreator(USER_PROFILE_NAME)
+ALGORITHM_NAME = "test-algorithm-arn"
+MODEL_DATA_URL = "s3://test"
+SOURCE_ALGORITHMS = [SourceAlgorithm(ALGORITHM_NAME, MODEL_DATA_URL)]
+NEAREST_MODEL_NAME = "test-model"
+CONTAINERS = [Container(MODEL_IMAGE, MODEL_DATA_URL, NEAREST_MODEL_NAME)]
+INFERENCE_SPECIFICATION = InferenceSpecification(CONTAINERS)
 
 # intended uses auguments
 PURPOSE_OF_MODEL = "mock model for testing"
@@ -596,6 +621,26 @@ def fixture_model_overview_example():
     )
     return test_example
 
+
+@pytest.fixture(name="model_package_example")
+def fixture_model_package_example():
+    """Example ModelPackage instance"""
+    test_example = ModelPackage(
+        model_package_arn=MODEL_PACKAGE_ARN,
+        model_package_description=MODEL_PACKAGE_DESCRIPTION,
+        model_package_group_name=MODEL_PACKAGE_GROUP_NAME,
+        model_package_name=MODEL_PACKAGE_NAME,
+        model_approval_status=MODEL_APPROVAL_STATUS,
+        model_package_status=MODEL_PACKAGE_STATUS,
+        model_package_version=MODEL_PACKAGE_VERSION,
+        approval_description=APPROVAL_DESCRIPTION,
+        domain=DOMAIN,
+        task=TASK,
+        created_by=CREATED_BY,
+        source_algorithms=SOURCE_ALGORITHMS,
+        inference_specification=INFERENCE_SPECIFICATION
+    )
+    return test_example
 
 @pytest.fixture(name="intended_uses_example")
 def fixture_fixture_intended_uses_example():

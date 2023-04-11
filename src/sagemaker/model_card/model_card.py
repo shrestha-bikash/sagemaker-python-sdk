@@ -208,6 +208,257 @@ class ModelOverview(_DefaultToRequestDict, _DefaultFromDict):
         return cls(**kwargs)
 
 
+class ModelPackageCreator(_DefaultToRequestDict, _DefaultFromDict):
+    """Information about the user who created the model package"""
+
+    def __init__(self, user_profile_name: Optional[str] = None):
+        """Initialize the ModelPackageCreator object.
+
+        Args:
+            user_profile_name: The name of the user's profile.
+        """ # noqa E501 # pylint: disable=line-too-long
+        self.user_profile_name = user_profile_name
+
+
+class SourceAlgorithm(_DefaultToRequestDict, _DefaultFromDict):
+    """Source algorithm object"""
+
+    def __init__(self, algorithm_name: str, model_data_url: Optional[str] = None):
+        """Initialize source algorithm object
+
+        Args:
+            algorithm_name: The ARN of an algorithm resource that was used to create the model package. (Required field)
+            model_data_url: The Amazon S3 path where the model artifacts, which result from model training, are stored.
+        """
+        self.algorithm_name = algorithm_name
+        self.model_data_url = model_data_url
+        
+
+class Container(_DefaultToRequestDict, _DefaultFromDict):
+    """Inference container to store the list of model data urls, images and nearest model names"""
+    def __init__(self, image: str, model_data_url: Optional[str] = None, nearest_model_name: Optional[str] = None):
+        """Initialize inference container object.
+        
+        Args:
+            image: The Amazon EC2 Container Registry (Amazon ECR) path where inference code is stored. Also known as inference environment (Required field)
+            model_data_url: The Amazon S3 path where the model artifacts, which result from model training, are stored. Also known as model artifact
+            nearest_model_name: The name of a pre-trained machine learning benchmarked by Amazon SageMaker Inference Recommender model that matches your model.
+        """
+        self.image = image
+        self.model_data_url = model_data_url
+        self.nearest_model_name = nearest_model_name
+
+
+class InferenceSpecification(_DefaultToRequestDict, _DefaultFromDict):
+    """Details about inference jobs that can be run with models based on this model package."""
+    containers = _IsList(Container, 15)
+
+    def __init__(self, containers: List[Container]):
+        """Initialize Inference specification object.
+
+        Args:
+            containers: The inference container object (Required field).
+        """
+        self.containers = containers
+
+
+class ModelPackage(_DefaultToRequestDict, _DefaultFromDict):
+    """
+    Model package version details
+    """
+
+    created_by = _IsModelCardObject(ModelPackageCreator)
+    source_algorithms = _IsList(SourceAlgorithm, 15)
+    inference_specification = _IsModelCardObject(InferenceSpecification)
+
+    def __init__(
+            self, 
+            model_package_arn: Optional[str] = None,
+            model_package_description: Optional[str] = None,
+            model_package_status: Optional[str] = None,
+            approval_description: Optional[str] = None,
+            model_approval_status: Optional[str] = None,
+            model_package_group_name: Optional[str] = None,
+            model_package_name: Optional[str] = None,
+            model_package_version: Optional[int] = None,
+            domain: Optional[str] = None,
+            task: Optional[str] = None,
+            created_by: Optional[ModelPackageCreator] = None,
+            source_algorithms: Optional[List[SourceAlgorithm]] = None,
+            inference_specification: Optional[InferenceSpecification] = None
+        ):
+        """
+            Initialize the ModelPackage object
+
+            Args:
+                model_package_arn (str, optional): Model package ARN (default: None),
+                model_package_description (str, optional): A brief summary of the model package (default: None),
+                model_package_status (str, optional): Current status of model package (default: None),
+                approval_description (str, optional): A description provided for the model approval (default: None),
+                model_approval_status (str, optional): Current approval status of model package (default: None),
+                model_package_group_name (str, optional): If the model is a versioned model, the name of the model group that the versioned model belongs to. (default: None),
+                model_package_name (str, optional): Name of the model package (default: None),
+                model_package_version (int, optional): Version of the model package (default: None),
+                domain (str, optional): The machine learning domain of the model package you specified. Common machine learning domains include computer vision and natural language processing. (default: None),
+                task (str, optional): The machine learning task you specified that your model package accomplishes. Common machine learning tasks include object detection and image classification. (default: None),
+                created_by (ModelPackageCreator, optional): Information about the user who created model package. (default: None),
+                source_algorithms (SourceAlgorithms, optional):A list of algorithms that were used to create a model package. (default: None),
+                inference_specification (InferenceSpecification, optional): Details about inference jobs that can be run with models based on this model package. (default: None)
+        """
+        self.model_package_arn = model_package_arn
+        self.model_package_description = model_package_description
+        self.model_package_status = model_package_status
+        self.model_approval_status = model_approval_status
+        self.approval_description = approval_description
+        self.model_package_group_name = model_package_group_name
+        self.model_package_name = model_package_name
+        self.model_package_version = model_package_version
+        self.domain = domain
+        self.task = task
+        self.created_by = created_by
+        self.source_algorithms = source_algorithms
+        self.inference_specification = inference_specification
+        
+    
+    @classmethod
+    def from_model_package_name(cls, model_package_name: str, sagemaker_session: Session = None, **kwargs):
+        """Initialize a model package details from auto-discovered data.
+
+        Args:
+            model_package_name (str): The ARN of the model package version.
+            sagemaker_session (Session, optional): A SageMaker Session
+                object, used for SageMaker interactions (default: None). If not
+                specified, a SageMaker Session is created using the default AWS configuration
+                chain.
+            **kwargs: Other arguments in ModelPackage, i.e. model_package_description,
+                model_package_status, model_approval_status, model_approval_description, model_package_group_name, domain, task,  model_package_version, 
+                algorithm_specification, model_package_creator, inference_specification
+        Raises:
+            ValueError: A model with this name does not exist.
+            ValueError: A model card already exists for this model.
+        """
+
+        OPTIONAL_FIELDS_MAP = {
+            'ModelPackageName': 'model_package_name',
+            'ModelPackageDescription': 'model_package_description',
+            'ApprovalDescription': 'approval_description',
+            'Domain': 'domain',
+            'Task': 'task'
+        }
+
+        def call_describe_model_package():
+            """Load existing model."""
+            try:
+                model_package_response = sagemaker_session.sagemaker_client.describe_model_package(
+                    ModelPackageName=model_package_name
+                )
+            except ClientError as e:
+                if e.response["Error"]["Message"].startswith(  # pylint: disable=r1720
+                    "Could not find model package"
+                ):
+                    raise ValueError(
+                        (
+                            f"Model package details for {model_package_name} could not be found. "
+                            "Make sure the model package name or ARN is valid."
+                        )
+                    )
+                else:
+                    raise
+            return model_package_response
+
+        def search_model_package_associated_model_cards(model_id: str):
+            """Check if a model card already exists for this model package version.
+
+            Args:
+                model_id (str): Model package version ARN.
+            """
+            response = sagemaker_session.sagemaker_client.search(
+                Resource="ModelCard",
+                SearchExpression={
+                    "Filters": [
+                        {
+                            "Name": "ModelId",
+                            "Operator": "Equals",
+                            "Value": model_id,
+                        }
+                    ]
+                },
+            )
+            return [c["ModelCard"]["ModelCardName"] for c in response["Results"]]
+
+        if not sagemaker_session:
+            sagemaker_session = Session()  # pylint: disable=W0106
+
+        model_package_response = call_describe_model_package()
+
+        associated_model_cards = search_model_package_associated_model_cards(model_package_response["ModelPackageArn"])
+        if associated_model_cards:
+            raise ValueError(
+                f"The model package has been associated with {associated_model_cards} model cards."
+            )
+
+        kwargs.update(
+            {
+                "model_package_arn": model_package_response["ModelPackageArn"],
+                "model_package_group_name": model_package_response["ModelPackageGroupName"],
+                "model_package_status": model_package_response["ModelPackageStatus"],
+                "model_approval_status": model_package_response["ModelApprovalStatus"],
+                "model_package_version": model_package_response["ModelPackageVersion"],
+            }
+        )
+
+        for key in OPTIONAL_FIELDS_MAP:
+            if key in model_package_response:
+                kwargs.update(
+                    {
+                        OPTIONAL_FIELDS_MAP[key]: model_package_response[key]
+                    }
+                )
+
+        if "UserProfileName" in model_package_response["CreatedBy"]:
+            model_package_creator = ModelPackageCreator(user_profile_name=model_package_response["CreatedBy"]["UserProfileName"])
+            kwargs.update(
+                {
+                    "created_by": model_package_creator
+                }
+            )
+
+        if "InferenceSpecification" in model_package_response:
+            containers_response = model_package_response["InferenceSpecification"]["Containers"]
+            containers = []
+            for container in containers_response:
+                if ("ModelDataUrl" in container and "NearestModelName" in container):
+                    containers.append(Container(container["Image"], container["ModelDataUrl"], container["NearestModelName"]))
+                elif ("ModelDataUrl" in container and "NearestModelName" not in container):
+                    containers.append(Container(container["Image"], container["ModelDataUrl"]))
+                elif ("ModelDataUrl" not in container and "NearestModelName" in container):
+                    containers.append(Container(container["Image"], container["NearestModelName"]))
+                else:
+                    containers.append(Container(container["Image"]))
+
+            kwargs.update(
+                {
+                    "inference_specification": InferenceSpecification(containers)
+                }
+            )
+
+        if "SourceAlgorithmSpecification" in model_package_response:
+            source_algorithms_response = model_package_response["SourceAlgorithmSpecification"]["SourceAlgorithms"]
+            source_algorithms = [
+                SourceAlgorithm(SA["AlgorithmName"], SA["ModelDataUrl"]) if "ModelDataUrl" in SA 
+                else SourceAlgorithm(SA["AlgorithmName"]) 
+                for SA in source_algorithms_response
+            ]
+
+            kwargs.update(
+                {
+                    "source_algorithms": source_algorithms
+                }
+            )
+
+        return cls(**kwargs)
+
+
 class IntendedUses(_DefaultToRequestDict, _DefaultFromDict):
     """The intended uses of a model."""
 
@@ -846,6 +1097,7 @@ class ModelCard(object):
     training_details = _IsModelCardObject(TrainingDetails)
     evaluation_details = _IsList(EvaluationJob)
     additional_information = _IsModelCardObject(AdditionalInformation)
+    model_package_details = _IsModelCardObject(ModelPackage)
 
     def __init__(
         self,
@@ -863,6 +1115,7 @@ class ModelCard(object):
         training_details: Optional[TrainingDetails] = None,
         evaluation_details: Optional[List[EvaluationJob]] = None,
         additional_information: Optional[AdditionalInformation] = None,
+        model_package: Optional[ModelPackage] = None,
         sagemaker_session: Optional[Session] = None,
     ):
         """Initialize an Amazon SageMaker Model Card.
@@ -882,6 +1135,7 @@ class ModelCard(object):
             training_details (TrainingDetails, optional): The training details of the model (default: None).
             evaluation_details (List[EvaluationJob], optional): The evaluation details of the model (default: None).
             additional_information (AdditionalInformation, optional): Additional information about the model (default: None).
+            model_package_details (ModelPackage, optional): Model package version metadata information (default: None).
             sagemaker_session (Session, optional): A SageMaker Session object, used for SageMaker interactions (default: None). If not specified, a SageMaker Session is created using the default AWS configuration chain.
         """  # noqa E501 # pylint: disable=line-too-long
         self.name = name
@@ -898,7 +1152,12 @@ class ModelCard(object):
         self.training_details = training_details
         self.evaluation_details = evaluation_details
         self.additional_information = additional_information
+        self.model_package_details = self._from_model_package(model_package)
         self.sagemaker_session = sagemaker_session or Session()
+
+    def _from_model_package(self, model_package: ModelPackage):
+        # TODO: Add necessary logic to carryover information, auto-populate training details, auto-populate evaluation details
+        pass
 
     def create(self):
         """Create the model card"""
