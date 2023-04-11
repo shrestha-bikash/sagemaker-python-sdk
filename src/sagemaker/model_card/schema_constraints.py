@@ -62,6 +62,24 @@ class MetricTypeEnum(str, Enum):
     BAR_CHART = "bar_chart"
 
 
+class ModelPackageStatusEnum(str, Enum):
+    """Model package status enumerator"""
+
+    PENDING = "Pending"
+    IN_PROGRESS = "InProgress"
+    COMPLETED = "Completed"
+    FAILED = "Failed"
+    DELETING = "Deleting"
+
+
+class ModelApprovalStatusEnum(str, Enum):
+    """Model package approval status enumerator"""
+
+    APPROVED = "Approved"
+    REJECTED = "Rejected"
+    PENDING_MANUAL_APPROVAL = "PendingManualApproval"
+
+
 METRIC_VALUE_TYPE_MAP = {
     MetricTypeEnum.NUMBER: [int, float],
     MetricTypeEnum.LINEAR_GRAPH: [list],

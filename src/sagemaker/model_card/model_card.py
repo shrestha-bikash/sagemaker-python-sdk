@@ -28,6 +28,8 @@ from sagemaker.model_card.schema_constraints import (
     ObjectiveFunctionEnum,
     FacetEnum,
     MetricTypeEnum,
+    ModelPackageStatusEnum,
+    ModelApprovalStatusEnum,
     ENVIRONMENT_CONTAINER_IMAGES_MAX_SIZE,
     MODEL_ARTIFACT_MAX_SIZE,
     METRIC_VALUE_TYPE_MAP,
@@ -268,6 +270,8 @@ class ModelPackage(_DefaultToRequestDict, _DefaultFromDict):
     Model package version details
     """
 
+    model_package_status = _OneOf(ModelPackageStatusEnum)
+    model_approval_status = _OneOf(ModelApprovalStatusEnum)
     created_by = _IsModelCardObject(ModelPackageCreator)
     source_algorithms = _IsList(SourceAlgorithm, SOURCE_ALGORITHMS_MAX_SIZE)
     inference_specification = _IsModelCardObject(InferenceSpecification)
@@ -293,9 +297,9 @@ class ModelPackage(_DefaultToRequestDict, _DefaultFromDict):
             self, 
             model_package_arn: Optional[str] = None,
             model_package_description: Optional[str] = None,
-            model_package_status: Optional[str] = None,
+            model_package_status: Optional[Union[ModelPackageStatusEnum, str]] = None,
             approval_description: Optional[str] = None,
-            model_approval_status: Optional[str] = None,
+            model_approval_status: Optional[Union[ModelApprovalStatusEnum, str]] = None,
             model_package_group_name: Optional[str] = None,
             model_package_name: Optional[str] = None,
             model_package_version: Optional[int] = None,
@@ -311,9 +315,9 @@ class ModelPackage(_DefaultToRequestDict, _DefaultFromDict):
             Args:
                 model_package_arn (str, optional): Model package ARN (default: None),
                 model_package_description (str, optional): A brief summary of the model package (default: None),
-                model_package_status (str, optional): Current status of model package (default: None),
+                model_package_status (ModelPackageStatusEnum or str, optional): Current status of model package (default: None),
                 approval_description (str, optional): A description provided for the model approval (default: None),
-                model_approval_status (str, optional): Current approval status of model package (default: None),
+                model_approval_status (ModelApprovalStatusEnum or str, optional): Current approval status of model package (default: None),
                 model_package_group_name (str, optional): If the model is a versioned model, the name of the model group that the versioned model belongs to. (default: None),
                 model_package_name (str, optional): Name of the model package (default: None),
                 model_package_version (int, optional): Version of the model package (default: None),
