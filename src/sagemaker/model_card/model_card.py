@@ -218,7 +218,7 @@ class ModelPackageCreator(_DefaultToRequestDict, _DefaultFromDict):
         """Initialize the ModelPackageCreator object.
 
         Args:
-            user_profile_name (str, optional): The name of the user's profile.
+            user_profile_name (str, optional): The name of the user's profile. (default: None)
         """ # noqa E501 # pylint: disable=line-too-long
         self.user_profile_name = user_profile_name
 
@@ -230,8 +230,8 @@ class SourceAlgorithm(_DefaultToRequestDict, _DefaultFromDict):
         """Initialize source algorithm object
 
         Args:
-            algorithm_name (str): The ARN of an algorithm resource that was used to create the model package.
-            model_data_url (str, optional): The Amazon S3 path where the model artifacts, which result from model training, are stored.
+            algorithm_name (str): The ARN of an algorithm resource that was used to create the model package.,
+            model_data_url (str, optional): The Amazon S3 path where the model artifacts, which result from model training, are stored. (default: None)
         """
         self.algorithm_name = algorithm_name
         self.model_data_url = model_data_url
@@ -243,9 +243,9 @@ class Container(_DefaultToRequestDict, _DefaultFromDict):
         """Initialize inference container object.
         
         Args:
-            image (str): The Amazon EC2 Container Registry (Amazon ECR) path where inference code is stored. Also known as inference environment.
-            model_data_url (str, optional): The Amazon S3 path where the model artifacts, which result from model training, are stored. Also known as model artifact
-            nearest_model_name (str, optional): The name of a pre-trained machine learning benchmarked by Amazon SageMaker Inference Recommender model that matches your model.
+            image (str): The Amazon EC2 Container Registry (Amazon ECR) path where inference code is stored. Also known as inference environment.,
+            model_data_url (str, optional): The Amazon S3 path where the model artifacts, which result from model training, are stored. Also known as model artifact (default: None),
+            nearest_model_name (str, optional): The name of a pre-trained machine learning benchmarked by Amazon SageMaker Inference Recommender model that matches your model. (default: None)
         """
         self.image = image
         self.model_data_url = model_data_url
@@ -276,7 +276,7 @@ class ModelPackage(_DefaultToRequestDict, _DefaultFromDict):
     source_algorithms = _IsList(SourceAlgorithm, SOURCE_ALGORITHMS_MAX_SIZE)
     inference_specification = _IsModelCardObject(InferenceSpecification)
 
-    model_package_optional_fields_mapping = {
+    MODEL_PACKAGE_OPTIONAL_FIELDS_MAPPING = {
         "ModelPackageName": "model_package_name",
         "ModelPackageGroupName": "model_package_group_name",
         "ModelPackageVersion": "model_package_version",
@@ -288,7 +288,7 @@ class ModelPackage(_DefaultToRequestDict, _DefaultFromDict):
         "Task": "task"
     }
 
-    inference_specification_fields_mapping = {
+    INFERENCE_SPECIFICATION_FIELDS_MAPPING = {
         "NearestModelName": "nearest_model_name", 
         "ModelDataUrl": "model_data_url"
     }
@@ -354,7 +354,7 @@ class ModelPackage(_DefaultToRequestDict, _DefaultFromDict):
                 chain.
         Raises:
             ValueError: A model package with this name or ARN does not exist.
-            ValueError: A model card already exists for this model.
+            ValueError: A model card already exists for this model package.
         """
 
         def call_describe_model_package():
@@ -413,7 +413,7 @@ class ModelPackage(_DefaultToRequestDict, _DefaultFromDict):
             "model_package_arn": model_package_response["ModelPackageArn"]
         }
 
-        for key, field_name in ModelPackage.model_package_optional_fields_mapping.items():
+        for key, field_name in ModelPackage.MODEL_PACKAGE_OPTIONAL_FIELDS_MAPPING.items():
             if key in model_package_response:
                 model_package_details.update(
                     {
@@ -434,7 +434,7 @@ class ModelPackage(_DefaultToRequestDict, _DefaultFromDict):
             containers = []
             for container in containers_response:
                 args = {"image": container["Image"]}
-                for field, arg_key in ModelPackage.inference_specification_fields_mapping.items():
+                for field, arg_key in ModelPackage.INFERENCE_SPECIFICATION_FIELDS_MAPPING.items():
                     if field in container:
                         args[arg_key] = container[field]
                 containers.append(Container(**args))

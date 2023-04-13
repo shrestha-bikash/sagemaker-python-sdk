@@ -190,6 +190,62 @@ LOAD_MODEL_CARD_EXMPLE = {
     },
 }
 
+MODEL_CARD_WITH_MODEL_PACKAGE_MOCK_RESPONSE = {
+    "ModelCardArn": MODEL_CARD_ARN,
+    "ModelCardName": MODEL_CARD_NAME,
+    "ModelCardVersion": MODEL_CARD_VERSION,
+    "Content": json.dumps(
+        {
+            "model_package_details": {
+                "model_package_arn": MODEL_PACKAGE_ARN,
+                "model_package_name": MODEL_PACKAGE_NAME,
+                "model_package_group_name": MODEL_PACKAGE_GROUP_NAME,
+                "model_package_version": MODEL_PACKAGE_VERSION,
+                "model_package_description": MODEL_PACKAGE_DESCRIPTION,
+                "inference_specification": {
+                    "containers": [
+                        {
+                            "image": MODEL_IMAGE,
+                            "model_data_url": MODEL_DATA_URL,
+                            "nearest_model_name": NEAREST_MODEL_NAME
+                        }
+                    ]
+                },
+                "model_package_status": MODEL_PACKAGE_STATUS,
+                "model_approval_status": MODEL_APPROVAL_STATUS,
+                "approval_description": APPROVAL_DESCRIPTION,
+                "created_by": {
+                    "user_profile_name": USER_PROFILE_NAME,
+                },
+                "domain": DOMAIN,
+                "task": TASK,
+                "source_algorithms": [
+                    {
+                        "algorithm_name": ALGORITHM_NAME,
+                        "model_data_url": MODEL_DATA_URL
+                    }
+                ]
+            }
+        }
+    ),
+    "ModelCardStatus": MODEL_CARD_STATUS,
+    "CreationTime": datetime.datetime(2022, 9, 17, 17, 15, 45, 672000),
+    "CreatedBy": {},
+    "LastModifiedTime": datetime.datetime(2022, 9, 17, 17, 15, 45, 672000),
+    "LastModifiedBy": {},
+    "ResponseMetadata": {
+        "RequestId": "7f317f47-a1e5-45dc-975a-fa4d9df81365",
+        "HTTPStatusCode": 200,
+        "HTTPHeaders": {
+            "x-amzn-requestid": "7f317f47-a1e5-45dc-975a-fa4d9df81365",
+            "content-type": "application/x-amz-json-1.1",
+            "content-length": "2429",
+            "date": "Mon, 19 Sep 2022 21:09:05 GMT",
+        },
+        "RetryAttempts": 0,
+    },
+}
+
 SIMPLE_MODEL_CARD_ARN = "simple_test_model_card"
 SIMPLE_MODEL_CARD_NAME = "simple_test_model_card_arn"
 SIMPLE_MODEL_CARD_VERSION = 1
@@ -800,27 +856,25 @@ def test_create_model_card(
 @patch("sagemaker.Session")
 def test_create_model_card_with_model_package(
     session,
-    model_package_example,
-    intended_uses_example,
-    business_details_example,
-    additional_information_example,
+    model_package_example
 ):
     session.sagemaker_client.create_model_card = Mock(return_value=CREATE_MODEL_CARD_RETURN_EXAMPLE)
-    session.sagemaker_client.describe_model_card = Mock(return_value=LOAD_MODEL_CARD_EXMPLE)
+    session.sagemaker_client.describe_model_card = Mock(return_value=MODEL_CARD_WITH_MODEL_PACKAGE_MOCK_RESPONSE)
 
     card = ModelCard(
         name=MODEL_CARD_NAME,
         status=MODEL_CARD_STATUS,
         model_package=model_package_example,
-        intended_uses=intended_uses_example,
-        business_details=business_details_example,
-        additional_information=additional_information_example,
         sagemaker_session=session,
     )
 
     card.create()
 
     assert card.arn == MODEL_CARD_ARN
+    assert card.status == MODEL_CARD_STATUS
+    assert card.model_package_details.model_package_arn == MODEL_PACKAGE_ARN
+    assert card.model_package_details.model_approval_status == MODEL_APPROVAL_STATUS
+    assert card.model_package_details.created_by.user_profile_name == USER_PROFILE_NAME
 
 
 @patch("sagemaker.Session")
