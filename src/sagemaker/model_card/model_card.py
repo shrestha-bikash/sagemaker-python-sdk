@@ -1167,14 +1167,6 @@ class ModelCard(object):
 
         # TODO: Add necessary logic to carryover information, auto-populate training details, auto-populate evaluation details
 
-    def _from_model_package(self, model_package: ModelPackage):
-        # TODO: Add necessary logic to carryover information, auto-populate training details, auto-populate evaluation details
-        pass
-
-    def _from_model_package(self, model_package: ModelPackage):
-        # TODO: Add necessary logic to carryover information, auto-populate training details, auto-populate evaluation details
-        pass
-
     def create(self):
         """Create the model card"""
 
