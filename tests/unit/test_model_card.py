@@ -39,8 +39,15 @@ from sagemaker.model_card import (
     ModelCard,
     Function,
     TrainingJobDetails,
+    ModelPackage
 )
-from sagemaker.model_card.model_card import ModelCardExportJob
+from sagemaker.model_card.model_card import (
+    ModelCardExportJob, 
+    ModelPackageCreator, 
+    SourceAlgorithm,
+    Container,
+    InferenceSpecification 
+)
 from sagemaker.model_card.helpers import (
     _MaxSizeArray,
     _IsList,
@@ -69,6 +76,26 @@ MODEL_OWNER = "null owner"
 MODEL_ARTIFACT = ["s3://1", "s3://2"]
 MODEL_IMAGE = "test model container image"
 INFERENCE_ENVRIONMENT = Environment(container_image=[MODEL_IMAGE])
+
+# model package details arguments
+MODEL_PACKAGE_ARN = "arn:aws:sagemaker:us-west-2:001234567890:model-package/testmodelgroup/1"
+MODEL_PACKAGE_DESCRIPTION = "this is test model package"
+MODEL_PACKAGE_STATUS = "Pending"
+MODEL_APPROVAL_STATUS = "PendingManualApproval"
+APPROVAL_DESCRIPTION = "approval_description"
+MODEL_PACKAGE_GROUP_NAME = "testmodelgroup"
+MODEL_PACKAGE_NAME = "model_package_name"
+MODEL_PACKAGE_VERSION = 1
+DOMAIN = "domain"
+TASK = "task"
+USER_PROFILE_NAME = "test-user"
+CREATED_BY = ModelPackageCreator(USER_PROFILE_NAME)
+ALGORITHM_NAME = "test-algorithm-arn"
+MODEL_DATA_URL = "s3://test"
+SOURCE_ALGORITHMS = [SourceAlgorithm(ALGORITHM_NAME, MODEL_DATA_URL)]
+NEAREST_MODEL_NAME = "test-model"
+CONTAINERS = [Container(MODEL_IMAGE, MODEL_DATA_URL, NEAREST_MODEL_NAME)]
+INFERENCE_SPECIFICATION = InferenceSpecification(CONTAINERS)
 
 # intended uses auguments
 PURPOSE_OF_MODEL = "mock model for testing"
@@ -145,6 +172,62 @@ LOAD_MODEL_CARD_EXMPLE = {
     "ModelCardName": MODEL_CARD_NAME,
     "ModelCardVersion": MODEL_CARD_VERSION,
     "Content": "{}",
+    "ModelCardStatus": MODEL_CARD_STATUS,
+    "CreationTime": datetime.datetime(2022, 9, 17, 17, 15, 45, 672000),
+    "CreatedBy": {},
+    "LastModifiedTime": datetime.datetime(2022, 9, 17, 17, 15, 45, 672000),
+    "LastModifiedBy": {},
+    "ResponseMetadata": {
+        "RequestId": "7f317f47-a1e5-45dc-975a-fa4d9df81365",
+        "HTTPStatusCode": 200,
+        "HTTPHeaders": {
+            "x-amzn-requestid": "7f317f47-a1e5-45dc-975a-fa4d9df81365",
+            "content-type": "application/x-amz-json-1.1",
+            "content-length": "2429",
+            "date": "Mon, 19 Sep 2022 21:09:05 GMT",
+        },
+        "RetryAttempts": 0,
+    },
+}
+
+MODEL_CARD_WITH_MODEL_PACKAGE_MOCK_RESPONSE = {
+    "ModelCardArn": MODEL_CARD_ARN,
+    "ModelCardName": MODEL_CARD_NAME,
+    "ModelCardVersion": MODEL_CARD_VERSION,
+    "Content": json.dumps(
+        {
+            "model_package_details": {
+                "model_package_arn": MODEL_PACKAGE_ARN,
+                "model_package_name": MODEL_PACKAGE_NAME,
+                "model_package_group_name": MODEL_PACKAGE_GROUP_NAME,
+                "model_package_version": MODEL_PACKAGE_VERSION,
+                "model_package_description": MODEL_PACKAGE_DESCRIPTION,
+                "inference_specification": {
+                    "containers": [
+                        {
+                            "image": MODEL_IMAGE,
+                            "model_data_url": MODEL_DATA_URL,
+                            "nearest_model_name": NEAREST_MODEL_NAME
+                        }
+                    ]
+                },
+                "model_package_status": MODEL_PACKAGE_STATUS,
+                "model_approval_status": MODEL_APPROVAL_STATUS,
+                "approval_description": APPROVAL_DESCRIPTION,
+                "created_by": {
+                    "user_profile_name": USER_PROFILE_NAME,
+                },
+                "domain": DOMAIN,
+                "task": TASK,
+                "source_algorithms": [
+                    {
+                        "algorithm_name": ALGORITHM_NAME,
+                        "model_data_url": MODEL_DATA_URL
+                    }
+                ]
+            }
+        }
+    ),
     "ModelCardStatus": MODEL_CARD_STATUS,
     "CreationTime": datetime.datetime(2022, 9, 17, 17, 15, 45, 672000),
     "CreatedBy": {},
@@ -271,6 +354,47 @@ DESCRIBE_MODEL_EXAMPLE = {
     },
 }
 
+DESCRIBE_MODEL_PACKAGE_EXAMPLE = {
+    "ModelPackageArn": MODEL_PACKAGE_ARN,
+    "ModelPackageName": MODEL_PACKAGE_NAME,
+    "ModelPackageGroupName": MODEL_PACKAGE_GROUP_NAME,
+    "ModelPackageVersion": MODEL_PACKAGE_VERSION,
+    "ModelPackageDescription": MODEL_PACKAGE_DESCRIPTION,
+    "CreationTime": datetime.datetime(2022, 9, 20, 13, 4, 9, 134000),
+    "InferenceSpecification": {
+        "Containers": [
+            {
+                "Image": MODEL_IMAGE,
+                "ImageDigest": "sha256:4814427c3e0a6cf99e637704da3ada04219ac7cd5727ff62284153761d36d7d3",
+                "ModelDataUrl": MODEL_DATA_URL,
+                "NearestModelName": NEAREST_MODEL_NAME
+            }
+        ],
+        "SupportedContentTypes": [],
+        "SupportedResponseMIMETypes": []
+    },
+    "ModelPackageStatus": MODEL_PACKAGE_STATUS,
+    "ModelApprovalStatus": MODEL_APPROVAL_STATUS,
+    "CreatedBy": {
+        "UserProfileArn": "arn:aws:sagemaker:us-west-2:001234567890:user-profile/d-crvaptvnkhbq/test",
+        "UserProfileName": USER_PROFILE_NAME,
+        "DomainId": "d-crvaptvnkhbq"
+    },
+    "Domain": DOMAIN,
+    "Task": TASK,
+    "ResponseMetadata": {
+        "RequestId": "43ff67e3-2ae5-479e-bed0-9caccc9e62f0",
+        "HTTPStatusCode": 200,
+        "HTTPHeaders": {
+            "x-amzn-requestid": "43ff67e3-2ae5-479e-bed0-9caccc9e62f0",
+            "content-type": "application/x-amz-json-1.1",
+            "content-length": "590",
+            "date": "Tue, 20 Sep 2022 19:55:36 GMT",
+        },
+        "RetryAttempts": 0,
+    },
+}
+
 SEARCH_MODEL_CARD_WITH_MODEL_ID_EXAMPLE = {
     "Results": [
         {
@@ -329,6 +453,14 @@ MISSING_MODEL_CLIENT_ERROR = ClientError(
         "ResponseMetadata": {"MaxAttemptsReached": True, "RetryAttempts": 4},
     },
     operation_name="DescribeModel",
+)
+
+MISSING_MODEL_PACKAGE_CLIENT_ERROR = ClientError(
+    error_response={
+        "Error": {"Code": "BadRequest", "Message": f"Could not find model package {MODEL_PACKAGE_ARN}"},
+        "ResponseMetadata": {"MaxAttemptsReached": True, "RetryAttempts": 4},
+    },
+    operation_name="DescribeModelPackage",
 )
 
 TRAINING_JOB_NAME = MODEL_NAME
@@ -597,6 +729,26 @@ def fixture_model_overview_example():
     return test_example
 
 
+@pytest.fixture(name="model_package_example")
+def fixture_model_package_example():
+    """Example ModelPackage instance"""
+    test_example = ModelPackage(
+        model_package_arn=MODEL_PACKAGE_ARN,
+        model_package_description=MODEL_PACKAGE_DESCRIPTION,
+        model_package_group_name=MODEL_PACKAGE_GROUP_NAME,
+        model_package_name=MODEL_PACKAGE_NAME,
+        model_approval_status=MODEL_APPROVAL_STATUS,
+        model_package_status=MODEL_PACKAGE_STATUS,
+        model_package_version=MODEL_PACKAGE_VERSION,
+        approval_description=APPROVAL_DESCRIPTION,
+        domain=DOMAIN,
+        task=TASK,
+        created_by=CREATED_BY,
+        source_algorithms=SOURCE_ALGORITHMS,
+        inference_specification=INFERENCE_SPECIFICATION
+    )
+    return test_example
+
 @pytest.fixture(name="intended_uses_example")
 def fixture_fixture_intended_uses_example():
     """Example intended uses instance."""
@@ -699,6 +851,30 @@ def test_create_model_card(
     card.create()
 
     assert card.arn == MODEL_CARD_ARN
+
+
+@patch("sagemaker.Session")
+def test_create_model_card_with_model_package(
+    session,
+    model_package_example
+):
+    session.sagemaker_client.create_model_card = Mock(return_value=CREATE_MODEL_CARD_RETURN_EXAMPLE)
+    session.sagemaker_client.describe_model_card = Mock(return_value=MODEL_CARD_WITH_MODEL_PACKAGE_MOCK_RESPONSE)
+
+    card = ModelCard(
+        name=MODEL_CARD_NAME,
+        status=MODEL_CARD_STATUS,
+        model_package=model_package_example,
+        sagemaker_session=session,
+    )
+
+    card.create()
+
+    assert card.arn == MODEL_CARD_ARN
+    assert card.status == MODEL_CARD_STATUS
+    assert card.model_package_details.model_package_arn == MODEL_PACKAGE_ARN
+    assert card.model_package_details.model_approval_status == MODEL_APPROVAL_STATUS
+    assert card.model_package_details.created_by.user_profile_name == USER_PROFILE_NAME
 
 
 @patch("sagemaker.Session")
@@ -1028,6 +1204,40 @@ def test_model_details_autodiscovery(session):
         ),
     ):
         ModelOverview.from_model_name(MODEL_NAME, sagemaker_session=session)
+
+
+@patch("sagemaker.Session")
+def test_model_package_autodiscovery(session):
+    session.sagemaker_client.describe_model_package.side_effect = [
+        DESCRIBE_MODEL_PACKAGE_EXAMPLE,
+        DESCRIBE_MODEL_PACKAGE_EXAMPLE,
+        MISSING_MODEL_PACKAGE_CLIENT_ERROR,
+    ]
+
+    session.sagemaker_client.search.side_effect = [
+        SEARCH_MODEL_CARD_WITH_MODEL_ID_EMPTY_EXAMPLE,
+        SEARCH_MODEL_CARD_WITH_MODEL_ID_EXAMPLE,
+    ]
+
+    model_package = ModelPackage.from_model_package_name(MODEL_PACKAGE_ARN, sagemaker_session=session)
+    assert model_package.model_package_arn == MODEL_PACKAGE_ARN
+    assert model_package.model_package_group_name == MODEL_PACKAGE_GROUP_NAME
+    assert model_package.inference_specification.containers[0].model_data_url == MODEL_DATA_URL
+    assert model_package.created_by.user_profile_name == USER_PROFILE_NAME
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(f"The model package has already been associated with {[MODEL_CARD_NAME]} model cards."),
+    ):
+        ModelPackage.from_model_package_name(MODEL_PACKAGE_ARN, sagemaker_session=session)
+
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            f"Model package details for {MODEL_PACKAGE_ARN} could not be found. Make sure the model package name or ARN is valid."  # noqa E501  # pylint: disable=c0301
+        ),
+    ):
+        ModelPackage.from_model_package_name(MODEL_PACKAGE_ARN, sagemaker_session=session)
 
 
 @patch("sagemaker.Session")
